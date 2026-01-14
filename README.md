@@ -6,7 +6,7 @@ Access Claude Code from your phone. Go for a walk, sit on the couch, or work fro
 npm start
 ```
 
-That's it. Scan the QR code with your phone, and you're in.
+That's it. Scan the QR code and you're in.
 
 ---
 
@@ -34,21 +34,23 @@ npm start
 You'll see:
 
 ```
-┌─────────────────────────────────────────┐
-│  Claude Code Remote                     │
-│  ─────────────────                      │
-│  Local:  http://localhost:3456          │
-│  Tunnel: https://abc123.trycloudflare.com│
-│                                         │
-│  Auth Token: xxxx-xxxx-xxxx             │
-│                                         │
-│  [QR CODE]                              │
-│                                         │
-│  Scan to connect from your phone        │
-└─────────────────────────────────────────┘
+┌────────────────────────────────────────────┐
+│  Claude Code Remote                        │
+│  ─────────────────                         │
+│  Local:  http://localhost:3456             │
+│  Remote: https://abc123.trycloudflare.com  │
+│                                            │
+│         ▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄                    │
+│         █ ▄▄▄▄▄ █ ▀ █ █                    │
+│         █ █   █ █▀ ▄▀██                    │
+│         █ █▄▄▄█ █▀▀▄▄██                    │
+│         ▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀                    │
+│                                            │
+│  Scan to connect                           │
+└────────────────────────────────────────────┘
 ```
 
-Scan the QR code. Enter the token. Done.
+Scan the QR code. Done.
 
 ---
 

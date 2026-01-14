@@ -10,14 +10,22 @@ export function getAuthToken(): string {
 
 // Express middleware for HTTP routes
 export function authMiddleware(req: Request, res: Response, next: NextFunction) {
+  // Check Authorization header first, then query param (for iframes)
   const authHeader = req.headers.authorization;
+  const queryToken = req.query.token as string | undefined;
 
-  if (!authHeader) {
+  let token: string | undefined;
+
+  if (authHeader) {
+    token = authHeader.replace('Bearer ', '');
+  } else if (queryToken) {
+    token = queryToken;
+  }
+
+  if (!token) {
     res.status(401).json({ error: 'Missing authorization header' });
     return;
   }
-
-  const token = authHeader.replace('Bearer ', '');
 
   if (token !== AUTH_TOKEN) {
     res.status(403).json({ error: 'Invalid token' });

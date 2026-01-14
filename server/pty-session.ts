@@ -27,6 +27,8 @@ export class PtySession extends EventEmitter {
 
   private pty: pty.IPty | null = null;
   private buffer: string = '';
+  private outputHistory: string = '';
+  private static readonly MAX_HISTORY_SIZE = 100000; // ~100KB of history
   private status: 'running' | 'stopped' = 'stopped';
 
   constructor(id: string, cwd: string) {
@@ -43,6 +45,10 @@ export class PtySession extends EventEmitter {
       createdAt: this.createdAt,
       status: this.status,
     };
+  }
+
+  getHistory(): string {
+    return this.outputHistory;
   }
 
   start(): void {
@@ -70,6 +76,13 @@ export class PtySession extends EventEmitter {
 
     this.pty.onData((data: string) => {
       this.buffer += data;
+
+      // Store in history (with size limit)
+      this.outputHistory += data;
+      if (this.outputHistory.length > PtySession.MAX_HISTORY_SIZE) {
+        // Trim from the beginning, keeping recent output
+        this.outputHistory = this.outputHistory.slice(-PtySession.MAX_HISTORY_SIZE);
+      }
 
       // Emit raw output
       this.emit('output', {

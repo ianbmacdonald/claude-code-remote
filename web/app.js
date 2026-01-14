@@ -54,15 +54,23 @@ class ClaudeRemote {
       // Preview
       backBtn: document.getElementById('back-btn'),
       portSelect: document.getElementById('port-select'),
+      portInput: document.getElementById('port-input'),
+      goPortBtn: document.getElementById('go-port-btn'),
       refreshPreviewBtn: document.getElementById('refresh-preview-btn'),
       previewFrame: document.getElementById('preview-frame'),
 
       // Modal
       newSessionModal: document.getElementById('new-session-modal'),
       cwdInput: document.getElementById('cwd-input'),
+      cwdSuggestions: document.getElementById('cwd-suggestions'),
       cancelSessionBtn: document.getElementById('cancel-session-btn'),
       createSessionBtn: document.getElementById('create-session-btn'),
     };
+
+    // Autocomplete state
+    this.selectedSuggestionIndex = -1;
+    this.suggestions = [];
+    this.debounceTimer = null;
   }
 
   initTerminal() {
@@ -166,15 +174,32 @@ class ClaudeRemote {
 
     // Preview
     this.elements.backBtn.addEventListener('click', () => this.hidePreview());
-    this.elements.portSelect.addEventListener('change', (e) => this.loadPreview(e.target.value));
+    this.elements.portSelect.addEventListener('change', (e) => {
+      if (e.target.value) {
+        this.elements.portInput.value = e.target.value;
+        this.loadPreview(e.target.value);
+      }
+    });
+    this.elements.goPortBtn.addEventListener('click', () => this.loadCustomPort());
+    this.elements.portInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this.loadCustomPort();
+    });
     this.elements.refreshPreviewBtn.addEventListener('click', () => {
-      const port = this.elements.portSelect.value;
+      const port = this.elements.portInput.value || this.elements.portSelect.value;
       if (port) this.loadPreview(port);
     });
 
     // Modal
     this.elements.cancelSessionBtn.addEventListener('click', () => this.hideNewSessionModal());
     this.elements.createSessionBtn.addEventListener('click', () => this.createSession());
+
+    // Autocomplete
+    this.elements.cwdInput.addEventListener('input', () => this.onCwdInput());
+    this.elements.cwdInput.addEventListener('keydown', (e) => this.onCwdKeydown(e));
+    this.elements.cwdInput.addEventListener('blur', () => {
+      // Delay to allow click on suggestion
+      setTimeout(() => this.hideSuggestions(), 150);
+    });
   }
 
   showScreen(screenId) {
@@ -376,7 +401,132 @@ class ClaudeRemote {
 
   loadPreview(port) {
     if (!port) return;
-    this.elements.previewFrame.src = `/preview/${port}/`;
+    this.elements.previewFrame.src = `/preview/${port}/?token=${encodeURIComponent(this.token)}`;
+  }
+
+  loadCustomPort() {
+    const port = this.elements.portInput.value.trim();
+    if (port && port > 0 && port <= 65535) {
+      this.loadPreview(port);
+    }
+  }
+
+  // Autocomplete methods
+  onCwdInput() {
+    clearTimeout(this.debounceTimer);
+    this.debounceTimer = setTimeout(() => this.fetchSuggestions(), 150);
+  }
+
+  async fetchSuggestions() {
+    const value = this.elements.cwdInput.value;
+    if (!value) {
+      this.hideSuggestions();
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/dirs?path=${encodeURIComponent(value)}`, {
+        headers: { Authorization: `Bearer ${this.token}` },
+      });
+      this.suggestions = await response.json();
+      this.selectedSuggestionIndex = -1;
+      this.renderSuggestions();
+    } catch (err) {
+      console.error('Failed to fetch suggestions:', err);
+      this.hideSuggestions();
+    }
+  }
+
+  renderSuggestions() {
+    const ul = this.elements.cwdSuggestions;
+
+    if (this.suggestions.length === 0) {
+      this.hideSuggestions();
+      return;
+    }
+
+    ul.innerHTML = this.suggestions.map((s, i) => `
+      <li role="option" data-index="${i}" class="${i === this.selectedSuggestionIndex ? 'selected' : ''}">
+        <span class="dir-name">${s.name}/</span>
+      </li>
+    `).join('');
+
+    // Add click handlers
+    ul.querySelectorAll('li').forEach(li => {
+      li.addEventListener('click', () => {
+        const index = parseInt(li.dataset.index, 10);
+        this.selectSuggestion(index);
+      });
+    });
+
+    ul.classList.remove('hidden');
+  }
+
+  hideSuggestions() {
+    this.elements.cwdSuggestions.classList.add('hidden');
+    this.suggestions = [];
+    this.selectedSuggestionIndex = -1;
+  }
+
+  selectSuggestion(index) {
+    if (index >= 0 && index < this.suggestions.length) {
+      this.elements.cwdInput.value = this.suggestions[index].path;
+      this.hideSuggestions();
+      // Trigger another fetch for subdirectories
+      this.fetchSuggestions();
+    }
+  }
+
+  onCwdKeydown(e) {
+    // Handle Enter even when no suggestions
+    if (e.key === 'Enter' && this.suggestions.length === 0) {
+      this.createSession();
+      return;
+    }
+
+    if (this.suggestions.length === 0) return;
+
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        this.selectedSuggestionIndex = Math.min(
+          this.selectedSuggestionIndex + 1,
+          this.suggestions.length - 1
+        );
+        this.renderSuggestions();
+        break;
+
+      case 'ArrowUp':
+        e.preventDefault();
+        this.selectedSuggestionIndex = Math.max(this.selectedSuggestionIndex - 1, -1);
+        this.renderSuggestions();
+        break;
+
+      case 'Tab':
+        if (this.selectedSuggestionIndex >= 0) {
+          e.preventDefault();
+          this.selectSuggestion(this.selectedSuggestionIndex);
+        } else if (this.suggestions.length > 0) {
+          e.preventDefault();
+          this.selectSuggestion(0);
+        }
+        break;
+
+      case 'Enter':
+        if (this.selectedSuggestionIndex >= 0) {
+          e.preventDefault();
+          this.selectSuggestion(this.selectedSuggestionIndex);
+        } else {
+          // No suggestion selected - submit the form
+          this.hideSuggestions();
+          this.createSession();
+        }
+        break;
+
+      case 'Escape':
+        this.hideSuggestions();
+        break;
+    }
   }
 }
 

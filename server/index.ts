@@ -4,6 +4,8 @@ import express from 'express';
 import { createServer } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import path from 'path';
+import fs from 'fs';
+import os from 'os';
 import { fileURLToPath } from 'url';
 import qrcode from 'qrcode-terminal';
 import { SessionManager } from './session-manager.js';
@@ -32,6 +34,60 @@ app.get('/api/sessions', authMiddleware, (_req, res) => {
 app.get('/api/ports', authMiddleware, async (_req, res) => {
   const ports = await portDetector.detectPorts();
   res.json(ports);
+});
+
+// Directory listing for autocomplete
+app.get('/api/dirs', authMiddleware, (req, res) => {
+  try {
+    let inputPath = (req.query.path as string) || '';
+
+    // Expand ~ to home directory
+    if (inputPath.startsWith('~/')) {
+      inputPath = inputPath.replace('~/', `${os.homedir()}/`);
+    } else if (inputPath === '~') {
+      inputPath = os.homedir();
+    }
+
+    // Determine base directory and prefix to search
+    let dirToRead: string;
+    let prefix: string;
+
+    if (inputPath.endsWith('/')) {
+      // User typed a complete directory path, list its contents
+      dirToRead = inputPath;
+      prefix = '';
+    } else {
+      // User is typing a name, list parent and filter
+      dirToRead = path.dirname(inputPath) || '/';
+      prefix = path.basename(inputPath).toLowerCase();
+    }
+
+    // Ensure path is absolute
+    if (!path.isAbsolute(dirToRead)) {
+      dirToRead = path.resolve(process.cwd(), dirToRead);
+    }
+
+    // Read directory
+    const entries = fs.readdirSync(dirToRead, { withFileTypes: true });
+
+    // Filter to directories only, apply prefix filter, limit results
+    const dirs = entries
+      .filter(e => e.isDirectory() && !e.name.startsWith('.'))
+      .filter(e => !prefix || e.name.toLowerCase().startsWith(prefix))
+      .slice(0, 20)
+      .map(e => {
+        const fullPath = path.join(dirToRead, e.name);
+        // Convert back to ~ notation for display
+        const displayPath = fullPath.startsWith(os.homedir())
+          ? fullPath.replace(os.homedir(), '~')
+          : fullPath;
+        return { name: e.name, path: displayPath + '/' };
+      });
+
+    res.json(dirs);
+  } catch {
+    res.json([]);
+  }
 });
 
 // Port proxy routes
@@ -187,7 +243,14 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
       };
       session.on('exit', state.exitHandler);
 
+      // Send session info first
       sendControl(ws, { type: 'session:attached', session: session.getInfo() });
+
+      // Then replay history as terminal output
+      const history = session.getHistory();
+      if (history && ws.readyState === WebSocket.OPEN) {
+        ws.send(history); // Send as text (terminal output)
+      }
       break;
     }
 

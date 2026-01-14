@@ -520,6 +520,40 @@ body::before {
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
+#port-input {
+  width: 80px;
+  padding: 0.625rem 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-fast);
+  -moz-appearance: textfield;
+}
+
+#port-input::-webkit-outer-spin-button,
+#port-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#port-input:hover {
+  border-color: var(--text-muted);
+}
+
+#port-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+#port-input::placeholder {
+  color: var(--text-muted);
+}
+
 #preview-frame {
   flex: 1;
   width: 100%;
@@ -624,6 +658,57 @@ body::before {
 .modal-actions .btn-primary {
   flex: 1;
   max-width: 140px;
+}
+
+/* Autocomplete */
+.autocomplete-wrapper {
+  position: relative;
+  margin-bottom: 1.25rem;
+}
+
+.autocomplete-wrapper input {
+  margin-bottom: 0;
+}
+
+.suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  padding: 0.5rem 0;
+  list-style: none;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-md);
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 10;
+}
+
+.suggestions li {
+  padding: 0.625rem 1rem;
+  font-family: var(--font-mono);
+  font-size: 0.875rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background var(--transition-fast);
+}
+
+.suggestions li:hover,
+.suggestions li.selected {
+  background: var(--bg-hover);
+}
+
+.suggestions li .dir-name {
+  color: var(--accent);
+}
+
+.suggestions li .dir-path {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin-left: 0.5rem;
 }
 
 /* ===== UTILITIES ===== */

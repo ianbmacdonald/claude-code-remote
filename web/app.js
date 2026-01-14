@@ -713,7 +713,7 @@ class ClaudeRemote {
         this.setShiftActive(!this.shiftActive);
         return; // Don't send anything, just toggle state
       case 'tab':
-        this.ws.send('\t');
+        this.ws.send(this.shiftActive ? '\x1b[Z' : '\t'); // Shift+Tab or Tab
         break;
       case 'slash':
         this.ws.send('/');

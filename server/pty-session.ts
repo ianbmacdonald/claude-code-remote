@@ -1,6 +1,8 @@
 import * as pty from 'node-pty';
 import { EventEmitter } from 'events';
 import stripAnsi from 'strip-ansi';
+import * as fs from 'fs';
+import { execSync } from 'child_process';
 
 export interface SessionInfo {
   id: string;
@@ -51,14 +53,64 @@ export class PtySession extends EventEmitter {
     return this.outputHistory;
   }
 
+  /**
+   * Find the claude CLI binary using multiple strategies:
+   * 1. CLAUDE_PATH env var (explicit override)
+   * 2. 'which claude' (respects user's PATH)
+   * 3. Common fallback paths
+   */
+  private static findClaudeBinary(): string {
+    // 1. Check CLAUDE_PATH env var first (explicit override)
+    if (process.env.CLAUDE_PATH) {
+      if (fs.existsSync(process.env.CLAUDE_PATH)) {
+        return process.env.CLAUDE_PATH;
+      }
+      throw new Error(
+        `CLAUDE_PATH is set to "${process.env.CLAUDE_PATH}" but file does not exist`
+      );
+    }
+
+    // 2. Try to find via 'which claude' (respects user's PATH)
+    try {
+      const whichResult = execSync('which claude', { encoding: 'utf-8', stdio: ['pipe', 'pipe', 'pipe'] }).trim();
+      if (whichResult && fs.existsSync(whichResult)) {
+        return whichResult;
+      }
+    } catch {
+      // 'which' failed, continue to fallbacks
+    }
+
+    // 3. Check common fallback paths
+    const homedir = process.env.HOME || '';
+    const fallbackPaths = [
+      `${homedir}/.local/bin/claude`,
+      '/usr/local/bin/claude',
+      '/opt/homebrew/bin/claude',
+      '/usr/bin/claude',
+    ];
+
+    for (const fallbackPath of fallbackPaths) {
+      if (fs.existsSync(fallbackPath)) {
+        return fallbackPath;
+      }
+    }
+
+    // 4. None found - throw helpful error
+    throw new Error(
+      'Could not find claude CLI. Please ensure it is installed and either:\n' +
+      '  - Set CLAUDE_PATH environment variable to the full path\n' +
+      '  - Add the claude binary location to your PATH\n' +
+      '  - Create a symlink: ln -s /path/to/claude ~/.local/bin/claude'
+    );
+  }
+
   start(): void {
     if (this.pty) {
       return;
     }
 
-    // Spawn claude command in the specified directory
-    const homedir = process.env.HOME || '';
-    const claudePath = `${homedir}/.local/bin/claude`;
+    // Find claude binary using multiple strategies
+    const claudePath = PtySession.findClaudeBinary();
 
     this.pty = pty.spawn(claudePath, [], {
       name: 'xterm-256color',

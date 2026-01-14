@@ -120,6 +120,7 @@ body::before {
 #auth-screen {
   justify-content: center;
   align-items: center;
+  min-height: 100vh;
   padding: 1.5rem;
   background:
     radial-gradient(ellipse at 50% 30%, rgba(240, 165, 0, 0.05) 0%, transparent 60%),

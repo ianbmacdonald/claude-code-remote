@@ -130,7 +130,13 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
       // Clean up previous session handlers if any
       cleanupSessionHandlers(state);
 
-      const cwd = message.cwd || process.cwd();
+      let cwd = message.cwd || process.cwd();
+      // Expand ~ to home directory (shell doesn't do this for cwd)
+      if (cwd.startsWith('~/')) {
+        cwd = cwd.replace('~/', `${process.env.HOME || ''}/`);
+      } else if (cwd === '~') {
+        cwd = process.env.HOME || process.cwd();
+      }
       const session = sessionManager.createSession(cwd);
       state.sessionId = session.id;
 

@@ -614,7 +614,7 @@ class ClaudeRemote {
     for (const session of sessions) {
       const option = document.createElement('option');
       option.value = session.id;
-      option.textContent = `${session.id.slice(0, 8)} - ${session.cwd.split('/').pop()}`;
+      option.textContent = `${session.id.slice(0, 3)} - ${session.cwd.split('/').pop()}`;
       select.appendChild(option);
     }
 
@@ -623,7 +623,7 @@ class ClaudeRemote {
       tabs.innerHTML = '<span class="session-tab-empty">No sessions</span>';
     } else {
       tabs.innerHTML = sessions.map(session => {
-        const shortId = session.id.slice(0, 8);
+        const shortId = session.id.slice(0, 3);
         const dirName = session.cwd.split('/').pop() || session.cwd;
         const isActive = session.id === this.currentSessionId;
         return `<button class="session-tab" role="tab" aria-selected="${isActive}" data-session-id="${session.id}">

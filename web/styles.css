@@ -357,14 +357,33 @@ body::before {
   transform: translateY(0);
 }
 
+.btn-icon-minimal {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem;
+  background: transparent;
+  color: var(--text-secondary);
+  border: none;
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.btn-icon-minimal:hover {
+  color: var(--accent);
+}
+
 /* Chevron rotation for toggle button */
-.btn-icon .chevron-icon {
+.btn-icon .chevron-icon,
+.btn-icon-minimal .chevron-icon {
   transition: transform var(--transition-smooth);
 }
 
-.btn-icon[aria-expanded="false"] .chevron-icon {
+.btn-icon[aria-expanded="false"] .chevron-icon,
+.btn-icon-minimal[aria-expanded="false"] .chevron-icon {
   transform: rotate(180deg);
 }
+
 
 /* ===== MAIN SCREEN ===== */
 #main-screen {
@@ -457,6 +476,12 @@ body::before {
   display: flex;
   gap: 0.5rem;
   align-items: center;
+}
+
+.header-left-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
 }
 
 /* Session Select (Mobile) */
@@ -993,19 +1018,84 @@ body::before {
   }
 }
 
-/* Small phones */
-@media (max-width: 389px) {
+/* Mobile phones */
+@media (max-width: 600px) {
+  #main-screen header {
+    flex-wrap: wrap;
+    gap: 0.375rem;
+    padding: 0.5rem 0.75rem;
+    padding-top: max(0.5rem, env(safe-area-inset-top));
+  }
+
+  /* Row 1: Session selector + actions on right */
+  .header-left {
+    order: 1;
+    width: 100%;
+    gap: 0.25rem;
+  }
+
   #session-select {
-    min-width: 100px;
-    max-width: 140px;
-    font-size: 0.8rem;
+    flex: 1;
+    min-width: 0;
+    max-width: none;
     padding: 0.5rem 1.75rem 0.5rem 0.625rem;
+    font-size: 0.8125rem;
+  }
+
+  .header-left-actions {
+    margin-left: auto;
+  }
+
+  /* Row 2: Action buttons */
+  .header-right {
+    order: 2;
+    width: 100%;
+    justify-content: flex-start;
+    gap: 0.5rem;
   }
 
   .btn-icon {
     min-width: 36px;
     height: 36px;
-    font-size: 0.85rem;
+    padding: 0 0.5rem;
+  }
+
+  .btn-icon svg {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Small phones */
+@media (max-width: 389px) {
+  #main-screen header {
+    padding: 0.375rem 0.5rem;
+    padding-top: max(0.375rem, env(safe-area-inset-top));
+  }
+
+  .header-left {
+    gap: 0.25rem;
+  }
+
+  .header-right {
+    gap: 0.125rem;
+  }
+
+  #session-select {
+    font-size: 0.75rem;
+    padding: 0.375rem 1.5rem 0.375rem 0.5rem;
+    background-position: right 0.5rem center;
+  }
+
+  .btn-icon {
+    min-width: 32px;
+    height: 32px;
+    padding: 0 0.375rem;
+  }
+
+  .btn-icon svg {
+    width: 14px;
+    height: 14px;
   }
 
   .auth-container {

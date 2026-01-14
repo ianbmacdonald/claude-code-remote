@@ -178,6 +178,7 @@ class ClaudeRemote {
       attachBtn: document.getElementById('attach-btn'),
       imageInput: document.getElementById('image-input'),
       toggleHeaderBtn: document.getElementById('toggle-header-btn'),
+      toggleHeaderBtnDesktop: document.getElementById('toggle-header-btn-desktop'),
       expandHeaderBtn: document.getElementById('expand-header-btn'),
       terminalContainer: document.getElementById('terminal-container'),
 
@@ -417,6 +418,7 @@ class ClaudeRemote {
       }
     });
     this.elements.toggleHeaderBtn.addEventListener('click', () => this.toggleHeader(true));
+    this.elements.toggleHeaderBtnDesktop?.addEventListener('click', () => this.toggleHeader(true));
     this.elements.expandHeaderBtn.addEventListener('click', () => this.toggleHeader(false));
 
     // Preview
@@ -480,6 +482,7 @@ class ClaudeRemote {
 
     const collapsed = this.elements.header.classList.contains('collapsed');
     this.elements.toggleHeaderBtn.setAttribute('aria-expanded', !collapsed);
+    this.elements.toggleHeaderBtnDesktop?.setAttribute('aria-expanded', !collapsed);
     this.elements.expandHeaderBtn.classList.toggle('hidden', !collapsed);
     setTimeout(() => this.fitTerminal(), 300);
   }

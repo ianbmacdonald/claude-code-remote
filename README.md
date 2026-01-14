@@ -12,13 +12,17 @@ That's it. Scan the QR code and you're in.
 
 ## What You Get
 
-**Full Terminal Access** - Not a chat wrapper. A real terminal. Everything Claude Code can do on your desktop, now in your pocket.
+🖥️ **Full Terminal Access** — Not a chat wrapper. A real terminal running on your machine. Read files, run commands, access your `.env` — everything works.
 
-**Session Persistence** - Start a session, put your phone down, come back later. Your work is still there.
+📂 **Any Project, Any Directory** — Open projects from anywhere on your machine. Just type the path (with autocomplete) and you're there.
 
-**Dev Server Preview** - Building a UI? Preview your local dev server right in the app. No tunnels to configure.
+🗂️ **Unlimited Sessions** — Open as many tabs as you want. Different projects, different conversations, all running in parallel.
 
-**Works Anywhere** - Uses Cloudflare Tunnel automatically. No port forwarding, no firewall headaches.
+💾 **Session Persistence** — Start a session, put your phone down, come back hours later. Your work is right where you left it.
+
+🌐 **Dev Server Preview** — Building a UI? Preview your local dev server right in the app. Hot reload and all.
+
+✨ **Zero Config Remote Access** — Uses Cloudflare Tunnel automatically. No port forwarding, no firewall headaches, no ngrok fees.
 
 ---
 

@@ -619,16 +619,22 @@ class ClaudeRemote {
     const tabs = this.elements.sessionTabs;
     const currentValue = select.value;
 
+    // Helper to extract folder name from path (handles trailing slashes)
+    const getFolderName = (cwd) => {
+      const parts = cwd.split('/').filter(Boolean);
+      return parts[parts.length - 1] || cwd;
+    };
+
     // Count folder name occurrences to detect duplicates
     const folderCounts = new Map();
     for (const session of sessions) {
-      const dirName = session.cwd.split('/').pop() || session.cwd;
+      const dirName = getFolderName(session.cwd);
       folderCounts.set(dirName, (folderCounts.get(dirName) || 0) + 1);
     }
 
     // Helper to get display name - just folder, or "ID folder" if duplicate
     const getDisplayName = (session) => {
-      const dirName = session.cwd.split('/').pop() || session.cwd;
+      const dirName = getFolderName(session.cwd);
       if (folderCounts.get(dirName) > 1) {
         return `${session.id.slice(0, 3)} ${dirName}`;
       }

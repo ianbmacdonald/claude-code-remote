@@ -1,5 +1,127 @@
 // Claude Code Remote - xterm.js Client
 
+// Notification Manager for input-required alerts
+class NotificationManager {
+  constructor(app) {
+    this.app = app;
+    this.enabled = false;
+    this.registration = null;
+    this.lastNotificationTime = new Map();
+    this.debounceTimers = new Map();
+    this.DEBOUNCE_MS = 500;
+    this.COOLDOWN_MS = 5000;
+
+    this.loadSettings();
+    this.registerServiceWorker();
+    this.listenForServiceWorkerMessages();
+  }
+
+  async registerServiceWorker() {
+    if ('serviceWorker' in navigator) {
+      try {
+        this.registration = await navigator.serviceWorker.register('/sw.js');
+        console.log('Service worker registered');
+      } catch (error) {
+        console.warn('Service worker registration failed:', error);
+      }
+    }
+  }
+
+  listenForServiceWorkerMessages() {
+    navigator.serviceWorker?.addEventListener('message', (event) => {
+      if (event.data.type === 'switch-session') {
+        this.app.attachSession(event.data.sessionId);
+      }
+    });
+  }
+
+  loadSettings() {
+    try {
+      const settings = JSON.parse(localStorage.getItem('ccr-settings') || '{}');
+      this.enabled = settings.notificationsEnabled || false;
+    } catch {
+      this.enabled = false;
+    }
+  }
+
+  saveSettings() {
+    localStorage.setItem('ccr-settings', JSON.stringify({
+      notificationsEnabled: this.enabled
+    }));
+  }
+
+  async requestPermission() {
+    if (!('Notification' in window)) return false;
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+
+    const result = await Notification.requestPermission();
+    return result === 'granted';
+  }
+
+  async enable() {
+    const granted = await this.requestPermission();
+    if (granted) {
+      this.enabled = true;
+      this.saveSettings();
+    }
+    return granted;
+  }
+
+  disable() {
+    this.enabled = false;
+    this.saveSettings();
+  }
+
+  isActiveSession(sessionId) {
+    return this.app.currentSessionId === sessionId;
+  }
+
+  shouldNotify(sessionId) {
+    if (!this.enabled) return false;
+    if (Notification.permission !== 'granted') return false;
+
+    const now = Date.now();
+    const lastTime = this.lastNotificationTime.get(sessionId) || 0;
+
+    // Cooldown check
+    if (now - lastTime < this.COOLDOWN_MS) return false;
+
+    // Active session + focused check
+    if (this.isActiveSession(sessionId) && document.hasFocus()) return false;
+
+    return true;
+  }
+
+  notify(sessionId, sessionName, preview) {
+    // Cancel existing debounce timer
+    clearTimeout(this.debounceTimers.get(sessionId));
+
+    // Set new debounce timer
+    this.debounceTimers.set(sessionId, setTimeout(() => {
+      if (this.shouldNotify(sessionId)) {
+        this.showNotification(sessionId, sessionName, preview);
+        this.lastNotificationTime.set(sessionId, Date.now());
+      }
+    }, this.DEBOUNCE_MS));
+  }
+
+  showNotification(sessionId, sessionName, preview) {
+    const title = `Input needed: ${sessionName}`;
+    const body = preview.length > 100 ? preview.slice(0, 100) + '...' : preview;
+
+    if (this.registration?.active) {
+      this.registration.active.postMessage({
+        type: 'show-notification',
+        title,
+        body,
+        sessionId,
+        tag: `input-${sessionId}`
+      });
+    }
+  }
+}
+
 class ClaudeRemote {
   constructor() {
     this.ws = null;
@@ -21,6 +143,10 @@ class ClaudeRemote {
     this.initElements();
     this.bindEvents();
     this.initTerminal();
+
+    // Initialize notification manager
+    this.notificationManager = new NotificationManager(this);
+    this.updateNotifyToggleState();
 
     // Auto-connect if we have a token
     if (urlToken) {
@@ -46,6 +172,7 @@ class ClaudeRemote {
       // Main
       header: document.getElementById('header'),
       sessionSelect: document.getElementById('session-select'),
+      sessionTabs: document.getElementById('session-tabs'),
       newSessionBtn: document.getElementById('new-session-btn'),
       previewBtn: document.getElementById('preview-btn'),
       attachBtn: document.getElementById('attach-btn'),
@@ -78,6 +205,12 @@ class ClaudeRemote {
 
       // Scroll to bottom
       scrollBottomBtn: document.getElementById('scroll-bottom-btn'),
+
+      // Settings
+      settingsBtn: document.getElementById('settings-btn'),
+      settingsModal: document.getElementById('settings-modal'),
+      closeSettingsBtn: document.getElementById('close-settings-btn'),
+      notifyToggle: document.getElementById('notify-toggle'),
     };
 
     // Mobile keys state
@@ -265,6 +398,11 @@ class ClaudeRemote {
 
     // Mobile keys
     this.initMobileKeys();
+
+    // Settings
+    this.elements.settingsBtn.addEventListener('click', () => this.showSettings());
+    this.elements.closeSettingsBtn.addEventListener('click', () => this.hideSettings());
+    this.elements.notifyToggle.addEventListener('click', () => this.toggleNotifications());
   }
 
   showScreen(screenId) {
@@ -286,6 +424,32 @@ class ClaudeRemote {
     this.elements.toggleHeaderBtn.setAttribute('aria-expanded', !collapsed);
     this.elements.expandHeaderBtn.classList.toggle('hidden', !collapsed);
     setTimeout(() => this.fitTerminal(), 300);
+  }
+
+  showSettings() {
+    this.elements.settingsModal.classList.remove('hidden');
+    this.updateNotifyToggleState();
+  }
+
+  hideSettings() {
+    this.elements.settingsModal.classList.add('hidden');
+  }
+
+  updateNotifyToggleState() {
+    const enabled = this.notificationManager?.enabled || false;
+    this.elements.notifyToggle.setAttribute('aria-checked', enabled);
+  }
+
+  async toggleNotifications() {
+    if (this.notificationManager.enabled) {
+      this.notificationManager.disable();
+    } else {
+      const success = await this.notificationManager.enable();
+      if (!success && Notification.permission === 'denied') {
+        alert('Notifications are blocked. Please enable them in your browser settings.');
+      }
+    }
+    this.updateNotifyToggleState();
   }
 
   connect() {
@@ -408,6 +572,15 @@ class ClaudeRemote {
         }
         break;
 
+      case 'session:input_required':
+        // Trigger notification when session needs input
+        this.notificationManager.notify(
+          message.sessionId,
+          message.sessionName,
+          message.preview
+        );
+        break;
+
       case 'error':
         this.terminal.writeln(`\r\n\x1b[31mError: ${message.error}\x1b[0m`);
         break;
@@ -433,14 +606,38 @@ class ClaudeRemote {
   updateSessionList(sessions) {
     this.sessions = sessions;
     const select = this.elements.sessionSelect;
+    const tabs = this.elements.sessionTabs;
     const currentValue = select.value;
 
+    // Update dropdown (mobile)
     select.innerHTML = '<option value="">Select session...</option>';
     for (const session of sessions) {
       const option = document.createElement('option');
       option.value = session.id;
       option.textContent = `${session.id.slice(0, 8)} - ${session.cwd.split('/').pop()}`;
       select.appendChild(option);
+    }
+
+    // Update tabs (desktop)
+    if (sessions.length === 0) {
+      tabs.innerHTML = '<span class="session-tab-empty">No sessions</span>';
+    } else {
+      tabs.innerHTML = sessions.map(session => {
+        const shortId = session.id.slice(0, 8);
+        const dirName = session.cwd.split('/').pop() || session.cwd;
+        const isActive = session.id === this.currentSessionId;
+        return `<button class="session-tab" role="tab" aria-selected="${isActive}" data-session-id="${session.id}">
+          <span class="session-tab-name">${shortId} - ${dirName}</span>
+        </button>`;
+      }).join('');
+
+      // Add click handlers
+      tabs.querySelectorAll('.session-tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const sessionId = tab.dataset.sessionId;
+          if (sessionId) this.attachSession(sessionId);
+        });
+      });
     }
 
     // Restore selection
@@ -454,6 +651,19 @@ class ClaudeRemote {
   attachSession(sessionId) {
     this.terminal.clear();
     this.sendControl({ type: 'session:attach', sessionId });
+    // Update tab selection immediately for responsive feel
+    this.updateTabSelection(sessionId);
+  }
+
+  updateTabSelection(sessionId) {
+    // Update dropdown
+    this.elements.sessionSelect.value = sessionId || '';
+
+    // Update tabs
+    this.elements.sessionTabs.querySelectorAll('.session-tab').forEach(tab => {
+      const isSelected = tab.dataset.sessionId === sessionId;
+      tab.setAttribute('aria-selected', isSelected);
+    });
   }
 
   showNewSessionModal() {

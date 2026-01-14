@@ -457,7 +457,7 @@ body::before {
   align-items: center;
 }
 
-/* Session Select */
+/* Session Select (Mobile) */
 #session-select {
   padding: 0.625rem 2rem 0.625rem 0.875rem;
   font-size: 0.875rem;
@@ -486,6 +486,83 @@ body::before {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+/* Session Tabs (Desktop) */
+.session-tabs {
+  display: flex;
+  gap: 0.25rem;
+  align-items: center;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  max-width: 50vw;
+}
+
+.session-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.session-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  font-family: var(--font-mono);
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.session-tab:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--text-muted);
+}
+
+.session-tab[aria-selected="true"] {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.session-tab-name {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-tab-empty {
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Responsive: Mobile/Desktop visibility */
+.mobile-only {
+  display: block;
+}
+
+.desktop-only {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .mobile-only {
+    display: none;
+  }
+
+  .desktop-only {
+    display: flex;
+  }
 }
 
 /* ===== TERMINAL CONTAINER ===== */
@@ -768,6 +845,105 @@ body::before {
   color: var(--text-muted);
   font-size: 0.75rem;
   margin-left: 0.5rem;
+}
+
+/* ===== SETTINGS MODAL ===== */
+.settings-content {
+  max-width: 380px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+}
+
+.modal-header h2 {
+  margin-bottom: 0;
+}
+
+.setting-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0;
+}
+
+.setting-info {
+  flex: 1;
+}
+
+.setting-info label {
+  display: block;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.25rem;
+}
+
+.setting-description {
+  font-size: 0.8125rem;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Toggle Switch */
+.toggle {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.toggle-track {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-hover);
+  border-radius: 14px;
+  transition: background var(--transition-fast);
+}
+
+.toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  background: var(--text-muted);
+  border-radius: 50%;
+  transition: transform var(--transition-fast), background var(--transition-fast);
+  box-shadow: var(--shadow-sm);
+}
+
+.toggle[aria-checked="true"] .toggle-track {
+  background: var(--accent-soft);
+}
+
+.toggle[aria-checked="true"] .toggle-thumb {
+  transform: translateX(20px);
+  background: var(--accent);
+}
+
+.toggle:hover .toggle-thumb {
+  background: var(--text-secondary);
+}
+
+.toggle[aria-checked="true"]:hover .toggle-thumb {
+  background: var(--accent-hover);
+}
+
+.toggle:focus-visible {
+  outline: none;
+}
+
+.toggle:focus-visible .toggle-track {
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 /* ===== UTILITIES ===== */

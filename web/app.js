@@ -66,6 +66,10 @@ class ClaudeRemote {
       cwdSuggestions: document.getElementById('cwd-suggestions'),
       cancelSessionBtn: document.getElementById('cancel-session-btn'),
       createSessionBtn: document.getElementById('create-session-btn'),
+
+      // Reconnect
+      reconnectBanner: document.getElementById('reconnect-banner'),
+      reconnectBtn: document.getElementById('reconnect-btn'),
     };
 
     // Autocomplete state
@@ -202,6 +206,9 @@ class ClaudeRemote {
       // Delay to allow click on suggestion
       setTimeout(() => this.hideSuggestions(), 150);
     });
+
+    // Reconnect
+    this.elements.reconnectBtn.addEventListener('click', () => this.reconnect());
   }
 
   showScreen(screenId) {
@@ -273,11 +280,18 @@ class ClaudeRemote {
 
     this.ws.onclose = () => {
       if (this.elements.mainScreen.classList.contains('active')) {
-        this.terminal.writeln('\r\n\x1b[33mDisconnected. Please reconnect.\x1b[0m');
+        this.terminal.writeln('\r\n\x1b[33mDisconnected.\x1b[0m');
+        this.elements.reconnectBanner.classList.remove('hidden');
       }
       this.elements.connectBtn.disabled = false;
       this.elements.connectBtn.classList.remove('loading');
     };
+  }
+
+  reconnect() {
+    this.elements.reconnectBanner.classList.add('hidden');
+    this.terminal.writeln('\x1b[90mReconnecting...\x1b[0m');
+    this.connect();
   }
 
   sendControl(message) {
@@ -292,10 +306,15 @@ class ClaudeRemote {
     switch (message.type) {
       case 'auth:success':
         localStorage.setItem('authToken', this.token);
+        this.elements.reconnectBanner.classList.add('hidden');
         this.showScreen('main-screen');
         this.sendControl({ type: 'session:list' });
         this.loadPorts();
         this.fitTerminal();
+        // Re-attach to previous session if we have one
+        if (this.currentSessionId) {
+          this.sendControl({ type: 'session:attach', sessionId: this.currentSessionId });
+        }
         break;
 
       case 'auth:failed':

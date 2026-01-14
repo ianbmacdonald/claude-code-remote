@@ -409,6 +409,43 @@ body::before {
   to { opacity: 1; transform: scale(1); }
 }
 
+/* Reconnect Banner */
+.reconnect-banner {
+  position: absolute;
+  bottom: max(1rem, env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--bg-elevated);
+  border: 1px solid var(--warning);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg), 0 0 20px rgba(210, 153, 34, 0.2);
+}
+
+.reconnect-banner:not(.hidden) {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(1rem); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+.reconnect-message {
+  color: var(--warning);
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.btn-small {
+  padding: 0.5rem 1rem;
+  font-size: 0.8125rem;
+}
+
 .header-left, .header-right {
   display: flex;
   gap: 0.5rem;

@@ -276,6 +276,64 @@ class ClaudeRemote {
     // Open terminal in container
     this.terminal.open(this.elements.terminalContainer);
 
+    // Handle macOS keyboard shortcuts (Cmd+Backspace, Cmd+Left, etc.)
+    this.terminal.attachCustomKeyEventHandler((e) => {
+      if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.currentSessionId) {
+        return true;
+      }
+
+      const isMac = navigator.platform.includes('Mac');
+      const cmdKey = isMac ? e.metaKey : e.ctrlKey;
+      const optKey = e.altKey;
+
+      if (cmdKey && !e.shiftKey) {
+        switch (e.key) {
+          case 'Backspace':
+            // Cmd+Backspace: Clear line to left (Ctrl+U)
+            e.preventDefault();
+            this.ws.send('\x15');
+            return false;
+          case 'ArrowLeft':
+            // Cmd+Left: Beginning of line (Ctrl+A)
+            e.preventDefault();
+            this.ws.send('\x01');
+            return false;
+          case 'ArrowRight':
+            // Cmd+Right: End of line (Ctrl+E)
+            e.preventDefault();
+            this.ws.send('\x05');
+            return false;
+          case 'k':
+            // Cmd+K: Clear terminal
+            e.preventDefault();
+            this.terminal.clear();
+            return false;
+        }
+      }
+
+      if (optKey && !cmdKey && !e.shiftKey) {
+        switch (e.key) {
+          case 'Backspace':
+            // Option+Backspace: Delete word (Ctrl+W)
+            e.preventDefault();
+            this.ws.send('\x17');
+            return false;
+          case 'ArrowLeft':
+            // Option+Left: Move word left (ESC+b)
+            e.preventDefault();
+            this.ws.send('\x1bb');
+            return false;
+          case 'ArrowRight':
+            // Option+Right: Move word right (ESC+f)
+            e.preventDefault();
+            this.ws.send('\x1bf');
+            return false;
+        }
+      }
+
+      return true;
+    });
+
     // Handle terminal input -> send to server
     this.terminal.onData((data) => {
       if (this.ws && this.ws.readyState === WebSocket.OPEN && this.currentSessionId) {

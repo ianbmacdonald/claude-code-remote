@@ -252,7 +252,7 @@ class ClaudeRemote {
       cursorStyle: 'bar',
       cursorWidth: 2,
       fontSize: 14,
-      fontFamily: '"JetBrains Mono", "SF Mono", Menlo, Monaco, "Courier New", monospace',
+      fontFamily: '"JetBrains Mono", "SF Mono", Menlo, Monaco, "Courier New", monospace, "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji"',
       fontWeight: '400',
       fontWeightBold: '600',
       letterSpacing: 0,

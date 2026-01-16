@@ -378,9 +378,9 @@ class ClaudeRemote {
             this.setCtrlActive(false);
           }
 
-          // Auto-dismiss keyboard on Enter (mobile only)
+          // Auto-dismiss keyboard on Enter (mobile only) - delay to avoid race conditions
           if ((char === 13 || char === 10) && this.elements.mobileKeys.classList.contains('visible')) {
-            this.terminal.blur();
+            setTimeout(() => this.terminal.blur(), 50);
           }
         }
         this.ws.send(data); // Send as text

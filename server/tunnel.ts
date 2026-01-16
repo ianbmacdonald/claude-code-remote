@@ -1,6 +1,24 @@
-import { spawn } from 'child_process';
+import { spawn, ChildProcess } from 'child_process';
+
+// Module-level state to track cloudflared process and cleanup handler
+let cloudflaredProcess: ChildProcess | null = null;
+let exitHandler: (() => void) | null = null;
+
+function cleanup() {
+  if (cloudflaredProcess) {
+    cloudflaredProcess.kill();
+    cloudflaredProcess = null;
+  }
+  if (exitHandler) {
+    process.removeListener('exit', exitHandler);
+    exitHandler = null;
+  }
+}
 
 export async function startTunnel(port: number): Promise<string | null> {
+  // Clean up any existing tunnel before starting a new one (handles hot reload)
+  cleanup();
+
   // Try cloudflared first (most reliable free option)
   const cloudflaredUrl = await tryCloudflared(port);
   if (cloudflaredUrl) {
@@ -19,6 +37,9 @@ function tryCloudflared(port: number): Promise<string | null> {
       const proc = spawn('cloudflared', ['tunnel', '--url', `http://localhost:${port}`], {
         stdio: ['ignore', 'pipe', 'pipe'],
       });
+
+      // Store reference for cleanup
+      cloudflaredProcess = proc;
 
       let output = '';
       const timeout = setTimeout(() => {
@@ -44,13 +65,15 @@ function tryCloudflared(port: number): Promise<string | null> {
 
       proc.on('exit', () => {
         clearTimeout(timeout);
+        cloudflaredProcess = null;
         resolve(null);
       });
 
-      // Keep process running
-      process.on('exit', () => {
+      // Register cleanup handler (only once per tunnel)
+      exitHandler = () => {
         proc.kill();
-      });
+      };
+      process.on('exit', exitHandler);
     } catch {
       resolve(null);
     }

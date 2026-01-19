@@ -460,7 +460,9 @@ server.listen(PORT, async () => {
   if (tunnelUrl) {
     console.log(`\nPublic: ${connectUrl}`);
   } else {
-    console.log('\nNo tunnel. Use ngrok or cloudflared:');
+    console.log('\nNo tunnel. Install cloudflared:');
+    console.log('  brew install cloudflared');
+    console.log('\nThen run:');
     console.log(`  cloudflared tunnel --url http://localhost:${PORT}`);
   }
 

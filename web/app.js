@@ -27,8 +27,10 @@ class TouchScrollManager {
 
   bindEvents() {
     // Create an invisible overlay to capture touch events
+    // IMPORTANT: z-index must be 1000+ to sit above all UI elements (dropdowns, modals, etc.)
+    // Lower values will break mobile scrolling when UI elements interfere with touch capture
     this.overlay = document.createElement('div');
-    this.overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;z-index:10;touch-action:none;';
+    this.overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;z-index:1000;touch-action:none;';
     this.container.style.position = 'relative';
     this.container.appendChild(this.overlay);
 

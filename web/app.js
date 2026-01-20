@@ -971,34 +971,39 @@ class ClaudeRemote {
         </button>`;
       }).join('');
 
-      // Add external sessions
+      // Add external sessions button
       if (this.externalSessions.length > 0) {
-        tabsHtml += this.externalSessions.map(external => {
-          return `<button class="session-tab session-tab-external" role="tab" aria-selected="false" data-external-pid="${external.pid}" data-external-cwd="${external.cwd}">
-          <span class="session-tab-name">📍 ${getFolderName(external.cwd)}</span>
-          <span class="session-tab-pid" title="Process ID ${external.pid}">PID ${external.pid}</span>
-        </button>`;
+        const dropdownHtml = this.externalSessions.map(external => {
+          const folderName = getFolderName(external.cwd);
+          return `<div class="external-session-item" data-external-pid="${external.pid}" data-external-cwd="${external.cwd}">
+            <div class="external-session-info">
+              <div class="external-session-name">${folderName}</div>
+              <div class="external-session-path">${external.cwd}</div>
+            </div>
+            <div class="external-session-pid">PID ${external.pid}</div>
+          </div>`;
         }).join('');
+
+        tabsHtml += `<div style="position: relative;">
+          <button class="external-sessions-btn" id="external-sessions-btn" title="External Claude sessions">
+            <span>📍 External</span>
+            <span class="external-sessions-badge">${this.externalSessions.length}</span>
+          </button>
+          <div class="external-sessions-dropdown hidden" id="external-sessions-dropdown">
+            ${dropdownHtml}
+          </div>
+        </div>`;
       }
 
       tabs.innerHTML = tabsHtml;
 
       // Add click handlers for regular sessions
-      tabs.querySelectorAll('.session-tab:not(.session-tab-external)').forEach(tab => {
+      tabs.querySelectorAll('.session-tab').forEach(tab => {
         tab.addEventListener('click', (e) => {
           // Don't switch session if clicking close button
           if (e.target.classList.contains('session-tab-close')) return;
           const sessionId = tab.dataset.sessionId;
           if (sessionId) this.attachSession(sessionId);
-        });
-      });
-
-      // Add click handlers for external sessions (adoption)
-      tabs.querySelectorAll('.session-tab-external').forEach(tab => {
-        tab.addEventListener('click', () => {
-          const pid = parseInt(tab.dataset.externalPid, 10);
-          const cwd = tab.dataset.externalCwd;
-          if (pid && cwd) this.adoptExternalSession(pid, cwd);
         });
       });
 
@@ -1010,6 +1015,54 @@ class ClaudeRemote {
           if (sessionId) this.closeSession(sessionId);
         });
       });
+
+      // Handle external sessions dropdown
+      if (this.externalSessions.length > 0) {
+        const externalBtn = document.getElementById('external-sessions-btn');
+        const externalDropdown = document.getElementById('external-sessions-dropdown');
+
+        if (externalBtn && externalDropdown) {
+          // Toggle dropdown
+          externalBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isVisible = externalDropdown.classList.contains('visible');
+
+            if (isVisible) {
+              externalDropdown.classList.remove('visible');
+              externalDropdown.classList.add('hidden');
+            } else {
+              externalDropdown.classList.remove('hidden');
+              externalDropdown.classList.add('visible');
+
+              // Close dropdown when clicking outside (only add when opening)
+              setTimeout(() => {
+                const closeDropdown = (e) => {
+                  if (!externalDropdown.contains(e.target) && !externalBtn.contains(e.target)) {
+                    externalDropdown.classList.remove('visible');
+                    externalDropdown.classList.add('hidden');
+                    document.removeEventListener('click', closeDropdown);
+                  }
+                };
+                document.addEventListener('click', closeDropdown);
+              }, 0);
+            }
+          });
+
+          // Handle external session adoption
+          externalDropdown.querySelectorAll('.external-session-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+              e.stopPropagation();
+              const pid = parseInt(item.dataset.externalPid, 10);
+              const cwd = item.dataset.externalCwd;
+              if (pid && cwd) {
+                this.adoptExternalSession(pid, cwd);
+                externalDropdown.classList.remove('visible');
+                externalDropdown.classList.add('hidden');
+              }
+            });
+          });
+        }
+      }
     }
 
     // Restore selection

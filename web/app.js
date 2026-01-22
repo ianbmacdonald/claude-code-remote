@@ -1156,9 +1156,8 @@ class ClaudeRemote {
     // Check if we have cached content for the new session - restore instantly
     const cached = this.sessionCache.get(sessionId);
     if (cached) {
-      this.terminal.write(cached.content);
-      // Restore scroll position after content is rendered
-      requestAnimationFrame(() => {
+      // Use write callback to restore scroll after content is fully rendered
+      this.terminal.write(cached.content, () => {
         this.terminal.scrollToLine(cached.scrollY);
       });
     }

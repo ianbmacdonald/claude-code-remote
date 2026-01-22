@@ -312,9 +312,11 @@ class ClaudeRemote {
     this.ws = null;
     this.terminal = null;
     this.fitAddon = null;
+    this.serializeAddon = null;
     this.currentSessionId = null;
     this.sessions = [];
     this.externalSessions = [];
+    this.sessionCache = new Map(); // Cache terminal content per session for instant switching
 
     // Check URL for token first, then localStorage
     const urlParams = new URLSearchParams(window.location.search);
@@ -460,11 +462,20 @@ class ClaudeRemote {
     const webLinksAddon = new WebLinksAddon.WebLinksAddon();
     this.terminal.loadAddon(webLinksAddon);
 
+    // Add serialize addon for instant tab switching
+    this.serializeAddon = new SerializeAddon.SerializeAddon();
+    this.terminal.loadAddon(this.serializeAddon);
+
     // Open terminal in container
     this.terminal.open(this.elements.terminalContainer);
 
     // Handle macOS keyboard shortcuts (Cmd+Backspace, Cmd+Left, etc.)
     this.terminal.attachCustomKeyEventHandler((e) => {
+      // Only handle keydown events to prevent double-firing
+      if (e.type !== 'keydown') {
+        return true;
+      }
+
       if (!this.ws || this.ws.readyState !== WebSocket.OPEN || !this.currentSessionId) {
         return true;
       }
@@ -839,11 +850,18 @@ class ClaudeRemote {
         break;
 
       case 'session:created':
-      case 'session:attached':
+      case 'session:attached': {
+        const isNewSession = message.type === 'session:created';
+        const hadCache = this.sessionCache.has(message.session.id) && this.sessionCache.get(message.session.id)?.content;
+
         this.currentSessionId = message.session.id;
-        this.terminal.clear();
-        this.terminal.writeln(`\x1b[32mConnected to session: ${message.session.id}\x1b[0m`);
-        this.terminal.writeln(`\x1b[90mWorking directory: ${message.session.cwd}\x1b[0m\r\n`);
+
+        // Only show connection message for new sessions or sessions without cache
+        if (isNewSession || !hadCache) {
+          this.terminal.clear();
+          this.terminal.writeln(`\x1b[32mConnected to session: ${message.session.id}\x1b[0m`);
+          this.terminal.writeln(`\x1b[90mWorking directory: ${message.session.cwd}\x1b[0m\r\n`);
+        }
         if (message.isAdopted) {
           this.terminal.writeln(`\x1b[36m✓ External session adopted successfully\x1b[0m\r\n`);
         }
@@ -858,6 +876,7 @@ class ClaudeRemote {
         // Focus terminal
         this.terminal.focus();
         break;
+      }
 
       case 'session:exit':
         this.terminal.writeln(`\r\n\x1b[33mSession exited with code ${message.exitCode}\x1b[0m`);
@@ -1119,10 +1138,37 @@ class ClaudeRemote {
   }
 
   attachSession(sessionId) {
+    // Save current session's terminal state before switching
+    if (this.currentSessionId && this.serializeAddon) {
+      try {
+        this.sessionCache.set(this.currentSessionId, {
+          content: this.serializeAddon.serialize(),
+          scrollY: this.terminal.buffer.active.viewportY,
+        });
+      } catch (e) {
+        // Ignore serialization errors
+      }
+    }
+
+    // Clear terminal
     this.terminal.clear();
-    this.sendControl({ type: 'session:attach', sessionId });
+
+    // Check if we have cached content for the new session - restore instantly
+    const cached = this.sessionCache.get(sessionId);
+    if (cached) {
+      this.terminal.write(cached.content);
+      // Restore scroll position after content is rendered
+      requestAnimationFrame(() => {
+        this.terminal.scrollToLine(cached.scrollY);
+      });
+    }
+
     // Update tab selection immediately for responsive feel
     this.updateTabSelection(sessionId);
+
+    // Send attach request - server will send history if we don't have cache
+    // or just start streaming new output if we do
+    this.sendControl({ type: 'session:attach', sessionId, hasCache: !!cached });
   }
 
   adoptExternalSession(pid, cwd) {
@@ -1142,6 +1188,9 @@ class ClaudeRemote {
     // Remove from local sessions list
     this.sessions = this.sessions.filter(s => s.id !== sessionId);
     this.updateSessionList(this.sessions);
+
+    // Clean up cached content
+    this.sessionCache.delete(sessionId);
 
     // If we were attached to this session, clear the terminal
     if (this.currentSessionId === sessionId) {

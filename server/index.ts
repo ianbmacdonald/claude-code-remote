@@ -193,6 +193,8 @@ interface ControlMessage {
   preferences?: { notificationsEnabled?: boolean };
   // External session adoption
   pid?: number;
+  // Client-side caching
+  hasCache?: boolean;
 }
 
 function handleControlMessage(ws: WebSocket, state: ClientState, message: ControlMessage) {
@@ -371,10 +373,12 @@ function handleControlMessage(ws: WebSocket, state: ClientState, message: Contro
       // Send session info first
       sendControl(ws, { type: 'session:attached', session: session.getInfo() });
 
-      // Then replay history as terminal output
-      const history = session.getHistory();
-      if (history && ws.readyState === WebSocket.OPEN) {
-        ws.send(history); // Send as text (terminal output)
+      // Only replay history if client doesn't have it cached
+      if (!message.hasCache) {
+        const history = session.getHistory();
+        if (history && ws.readyState === WebSocket.OPEN) {
+          ws.send(history); // Send as text (terminal output)
+        }
       }
       break;
     }

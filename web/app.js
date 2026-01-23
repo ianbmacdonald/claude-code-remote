@@ -1341,9 +1341,10 @@ class ClaudeRemote {
       </li>
     `).join('');
 
-    // Add click handlers
+    // Add click handlers - use mousedown to prevent blur from firing
     ul.querySelectorAll('li').forEach(li => {
-      li.addEventListener('click', () => {
+      li.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // Prevent blur on input
         const index = parseInt(li.dataset.index, 10);
         this.selectSuggestion(index);
       });
@@ -1362,7 +1363,8 @@ class ClaudeRemote {
     if (index >= 0 && index < this.suggestions.length) {
       this.elements.cwdInput.value = this.suggestions[index].path;
       this.hideSuggestions();
-      // Trigger another fetch for subdirectories
+      // Refocus input and trigger another fetch for subdirectories
+      this.elements.cwdInput.focus();
       this.fetchSuggestions();
     }
   }

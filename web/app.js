@@ -382,6 +382,7 @@ class ClaudeRemote {
       sessionSelect: document.getElementById('session-select'),
       sessionTabs: document.getElementById('session-tabs'),
       newSessionBtn: document.getElementById('new-session-btn'),
+      closeSessionBtn: document.getElementById('close-session-btn'),
       previewBtn: document.getElementById('preview-btn'),
       attachBtn: document.getElementById('attach-btn'),
       imageInput: document.getElementById('image-input'),
@@ -652,6 +653,7 @@ class ClaudeRemote {
       }
     });
     this.elements.newSessionBtn.addEventListener('click', () => this.showNewSessionModal());
+    this.elements.closeSessionBtn?.addEventListener('click', () => this.closeCurrentSession());
     this.elements.previewBtn.addEventListener('click', () => this.showPreview());
     this.elements.attachBtn.addEventListener('click', () => this.elements.imageInput.click());
     this.elements.imageInput.addEventListener('change', (e) => {
@@ -1214,6 +1216,12 @@ class ClaudeRemote {
 
   closeSession(sessionId) {
     this.sendControl({ type: 'session:destroy', sessionId });
+  }
+
+  closeCurrentSession() {
+    if (this.currentSessionId) {
+      this.closeSession(this.currentSessionId);
+    }
   }
 
   removeSession(sessionId) {

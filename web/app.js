@@ -19,19 +19,26 @@ class TouchScrollManager {
     this.lastTime = 0;
     this.accumulatedScroll = 0;
 
-    // Only activate on touch devices
-    if (window.matchMedia('(pointer: coarse)').matches) {
+    // Activate on any touch-capable device (not just coarse pointer)
+    // Some tablets/devices report 'fine' pointer but still support touch
+    const isTouchDevice = window.matchMedia('(pointer: coarse)').matches ||
+                          'ontouchstart' in window ||
+                          navigator.maxTouchPoints > 0;
+
+    if (isTouchDevice) {
       this.bindEvents();
     }
   }
 
   bindEvents() {
     // Create an invisible overlay to capture touch events
-    // IMPORTANT: z-index must be 1000+ to sit above all UI elements (dropdowns, modals, etc.)
-    // Lower values will break mobile scrolling when UI elements interfere with touch capture
+    // Uses CSS class .touch-scroll-overlay for z-index: 9999
+    // See styles.css for full documentation on why z-index must stay high
     this.overlay = document.createElement('div');
-    this.overlay.style.cssText = 'position:absolute;top:0;left:0;right:0;bottom:0;z-index:1000;touch-action:none;';
+    this.overlay.className = 'touch-scroll-overlay';
+    this.overlay.dataset.purpose = 'touch-scroll'; // For debugging in DevTools
     this.container.style.position = 'relative';
+    this.container.classList.add('touch-scroll-active'); // Enable touch-specific CSS
     this.container.appendChild(this.overlay);
 
     this.overlay.addEventListener('touchstart', (e) => this.onTouchStart(e), { passive: false });

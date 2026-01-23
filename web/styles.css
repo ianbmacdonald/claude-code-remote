@@ -1139,19 +1139,49 @@ body {
 
 /* Touch-friendly terminal */
 @media (pointer: coarse) {
-  #terminal-container .xterm-screen {
-    touch-action: none; /* Let TouchScrollManager handle touch */
-  }
-
-  #terminal-container .xterm-viewport {
-    -webkit-overflow-scrolling: auto;
-    overflow-y: hidden !important;
-  }
-
   .btn-icon {
     min-width: 44px;
     height: 44px;
   }
+}
+
+/* When touch scroll is active, disable native scrolling on xterm elements
+   This applies regardless of pointer type since we detect touch capability in JS
+   The .touch-scroll-active class is added by TouchScrollManager */
+#terminal-container.touch-scroll-active .xterm-screen {
+  touch-action: none;
+}
+
+#terminal-container.touch-scroll-active .xterm-viewport {
+  -webkit-overflow-scrolling: auto;
+  overflow-y: hidden !important;
+}
+
+/* ===== TOUCH SCROLL OVERLAY ===== */
+/* CRITICAL: This overlay captures touch events for momentum scrolling on mobile.
+   DO NOT lower the z-index below 9999 or mobile scrolling will break.
+   The overlay must sit above ALL other positioned elements including:
+   - External sessions dropdown (z-index: 100)
+   - Modals (z-index: 100)
+   - Tooltips (z-index: 1000)
+   - Any future UI elements
+
+   Regression history:
+   - 96cebff: Original momentum scrolling implementation
+   - f47d40c: Fixed touch-action CSS
+   - e1a8508: Raised z-index from 10 to 1000 (dropdown interference)
+   - Current: Raised to 9999 with CSS class for reliability
+*/
+.touch-scroll-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  touch-action: none;
+  /* Invisible but captures all touch events */
+  background: transparent;
 }
 
 /* Safe area support for notched devices */

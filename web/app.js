@@ -9,7 +9,8 @@ class TouchScrollManager {
     // Physics constants
     this.TIME_CONSTANT = 325; // ms - controls deceleration rate
     this.VELOCITY_THRESHOLD = 10; // px/s - minimum velocity to trigger momentum
-    this.LINE_HEIGHT = 14; // pixels per line (matches terminal lineHeight * fontSize)
+    // LINE_HEIGHT = fontSize (14) * lineHeight (1.2) = 16.8, rounded to 17
+    this.LINE_HEIGHT = 17;
 
     // State
     this.tracking = false;
@@ -1452,6 +1453,24 @@ class ClaudeRemote {
       // Keep terminal focused
       this.terminal.focus();
     });
+
+    // Add touch handlers for visual feedback (iOS doesn't always trigger :active)
+    this.elements.mobileKeys.addEventListener('touchstart', (e) => {
+      const btn = e.target.closest('.mobile-key');
+      if (btn) btn.classList.add('pressed');
+    }, { passive: true });
+
+    this.elements.mobileKeys.addEventListener('touchend', () => {
+      this.elements.mobileKeys.querySelectorAll('.mobile-key.pressed').forEach(btn => {
+        btn.classList.remove('pressed');
+      });
+    }, { passive: true });
+
+    this.elements.mobileKeys.addEventListener('touchcancel', () => {
+      this.elements.mobileKeys.querySelectorAll('.mobile-key.pressed').forEach(btn => {
+        btn.classList.remove('pressed');
+      });
+    }, { passive: true });
 
     // Detect keyboard visibility using visualViewport API
     if (window.visualViewport) {

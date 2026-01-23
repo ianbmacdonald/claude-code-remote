@@ -627,6 +627,8 @@ body {
   overflow: hidden;
   background: var(--bg-deep);
   position: relative;
+  /* Create stacking context so overlay z-index is contained within */
+  z-index: 0;
 }
 
 /* Terminal top separator */
@@ -1355,6 +1357,8 @@ kbd {
 }
 
 /* ===== MOBILE CONTROL KEYS TOOLBAR ===== */
+/* CRITICAL: z-index must be higher than touch-scroll-overlay (9999) to receive taps.
+   The overlay doesn't create a stacking context, so its 9999 z-index competes directly. */
 .mobile-keys {
   position: fixed;
   left: 0;
@@ -1365,7 +1369,7 @@ kbd {
   padding: 0.5rem;
   background: var(--bg-primary);
   border-top: 1px solid var(--border);
-  z-index: 50;
+  z-index: 10000;
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--transition);
@@ -1396,7 +1400,8 @@ kbd {
   transition: background var(--transition), color var(--transition);
 }
 
-.mobile-key:active {
+.mobile-key:active,
+.mobile-key.pressed {
   background: var(--bg-hover);
 }
 

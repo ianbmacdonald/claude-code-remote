@@ -409,6 +409,8 @@ class ClaudeRemote {
       goPortBtn: document.getElementById('go-port-btn'),
       refreshPreviewBtn: document.getElementById('refresh-preview-btn'),
       previewFrame: document.getElementById('preview-frame'),
+      addressInput: document.getElementById('address-input'),
+      addressGoBtn: document.getElementById('address-go-btn'),
 
       // Modal
       newSessionModal: document.getElementById('new-session-modal'),
@@ -682,16 +684,18 @@ class ClaudeRemote {
     this.elements.portSelect.addEventListener('change', (e) => {
       if (e.target.value) {
         this.elements.portInput.value = e.target.value;
-        this.loadPreview(e.target.value);
+        this.elements.addressInput.value = '/';
+        this.loadPreview(e.target.value, '/');
       }
     });
     this.elements.goPortBtn.addEventListener('click', () => this.loadCustomPort());
     this.elements.portInput.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') this.loadCustomPort();
     });
-    this.elements.refreshPreviewBtn.addEventListener('click', () => {
-      const port = this.elements.portInput.value || this.elements.portSelect.value;
-      if (port) this.loadPreview(port);
+    this.elements.refreshPreviewBtn.addEventListener('click', () => this.refreshPreview());
+    this.elements.addressGoBtn.addEventListener('click', () => this.navigateToAddress());
+    this.elements.addressInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') this.navigateToAddress();
     });
 
     // Modal
@@ -1330,17 +1334,45 @@ class ClaudeRemote {
   hidePreview() {
     this.showScreen('main-screen');
     this.elements.previewFrame.src = 'about:blank';
+    this.elements.addressInput.value = '';
   }
 
-  loadPreview(port) {
+  loadPreview(port, path = '/') {
     if (!port) return;
-    this.elements.previewFrame.src = `/preview/${port}/?token=${encodeURIComponent(this.token)}`;
+    // Normalize the path
+    if (!path.startsWith('/')) {
+      path = '/' + path;
+    }
+    // Store the current port for address bar navigation
+    this.currentPreviewPort = port;
+    // Update the address bar
+    this.elements.addressInput.value = path;
+    // Build the URL with the path
+    const encodedPath = path === '/' ? '/' : path;
+    this.elements.previewFrame.src = `/preview/${port}${encodedPath}?token=${encodeURIComponent(this.token)}`;
   }
 
   loadCustomPort() {
     const port = this.elements.portInput.value.trim();
     if (port && port > 0 && port <= 65535) {
-      this.loadPreview(port);
+      this.elements.addressInput.value = '/';
+      this.loadPreview(port, '/');
+    }
+  }
+
+  navigateToAddress() {
+    const port = this.currentPreviewPort || this.elements.portInput.value || this.elements.portSelect.value;
+    const path = this.elements.addressInput.value.trim() || '/';
+    if (port) {
+      this.loadPreview(port, path);
+    }
+  }
+
+  refreshPreview() {
+    const port = this.currentPreviewPort || this.elements.portInput.value || this.elements.portSelect.value;
+    const path = this.elements.addressInput.value.trim() || '/';
+    if (port) {
+      this.loadPreview(port, path);
     }
   }
 

@@ -779,6 +779,42 @@ body {
   color: var(--text-muted);
 }
 
+/* Address Bar */
+.preview-address-bar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--bg-deep);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+#address-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.8125rem;
+  font-family: var(--font-mono);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color var(--transition);
+}
+
+#address-input:hover {
+  border-color: var(--text-muted);
+}
+
+#address-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent-soft);
+}
+
+#address-input::placeholder {
+  color: var(--text-muted);
+}
+
 #preview-frame {
   flex: 1;
   width: 100%;
@@ -1034,6 +1070,15 @@ body {
 
 /* Mobile phones */
 @media (max-width: 600px) {
+  .preview-address-bar {
+    padding: 0.375rem 0.75rem;
+  }
+
+  #address-input {
+    font-size: 0.75rem;
+    padding: 0.375rem 0.625rem;
+  }
+
   #main-screen header {
     flex-wrap: wrap;
     gap: 0.375rem;
@@ -1222,6 +1267,11 @@ body {
 @supports (padding: max(0px)) {
   #main-screen header,
   #preview-screen header {
+    padding-left: max(1rem, env(safe-area-inset-left));
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+
+  .preview-address-bar {
     padding-left: max(1rem, env(safe-area-inset-left));
     padding-right: max(1rem, env(safe-area-inset-right));
   }

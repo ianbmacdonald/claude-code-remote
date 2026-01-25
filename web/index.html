@@ -197,6 +197,24 @@
           </svg>
         </button>
       </header>
+      <div id="preview-address-bar" class="preview-address-bar">
+        <input
+          type="text"
+          id="address-input"
+          placeholder="Enter path (e.g., /dashboard)"
+          autocomplete="off"
+          autocapitalize="off"
+          autocorrect="off"
+          spellcheck="false"
+          aria-label="URL path"
+        >
+        <button id="address-go-btn" class="btn-icon" title="Navigate" aria-label="Navigate to path">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"/>
+            <polyline points="12 5 19 12 12 19"/>
+          </svg>
+        </button>
+      </div>
       <iframe id="preview-frame" src="about:blank" title="Port preview"></iframe>
     </div>
 

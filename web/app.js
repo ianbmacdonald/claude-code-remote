@@ -1048,14 +1048,12 @@ class ClaudeRemote {
       return dirName;
     };
 
-    // Update dropdown (mobile)
+    // Update dropdown (mobile) - use static indicators (no animation to avoid flashing)
     select.innerHTML = '<option value="">Select session...</option>';
     for (const session of sessions) {
       const option = document.createElement('option');
       option.value = session.id;
-      const indicator = session.activityStatus === 'busy'
-        ? SPINNER_FRAMES[this.spinnerFrame]
-        : '●';
+      const indicator = session.activityStatus === 'busy' ? '◉' : '○';
       option.textContent = `${indicator} ${getDisplayName(session)}`;
       option.dataset.status = session.activityStatus || 'unknown';
       select.appendChild(option);
@@ -1071,12 +1069,9 @@ class ClaudeRemote {
       for (const external of this.externalSessions) {
         const option = document.createElement('option');
         option.value = `external:${external.pid}`;
-        const indicator = external.activityStatus === 'busy'
-          ? SPINNER_FRAMES[this.spinnerFrame]
-          : '●';
+        const indicator = external.activityStatus === 'busy' ? '◉' : '○';
         option.textContent = `${indicator} ${getFolderName(external.cwd)}`;
         option.dataset.status = external.activityStatus || 'unknown';
-        option.dataset.externalCwd = external.cwd;
         select.appendChild(option);
       }
     }
@@ -1630,24 +1625,61 @@ class ClaudeRemote {
 
   // Update session activity status without full re-render
   updateSessionStatus(sessions, externalSessions) {
+    let statusChanged = false;
+
     // Update stored session data
     for (const session of sessions) {
       const existing = this.sessions.find(s => s.id === session.id);
-      if (existing) {
+      if (existing && existing.activityStatus !== session.activityStatus) {
         existing.activityStatus = session.activityStatus;
+        statusChanged = true;
       }
     }
     // Update external sessions data
     if (externalSessions) {
       for (const external of externalSessions) {
         const existing = this.externalSessions.find(s => s.pid === external.pid);
-        if (existing) {
+        if (existing && existing.activityStatus !== external.activityStatus) {
           existing.activityStatus = external.activityStatus;
+          statusChanged = true;
         }
       }
     }
+
     // Update status indicators in the DOM
     this.updateActivityIndicators();
+
+    // Update dropdown options only when status actually changes
+    if (statusChanged) {
+      this.updateDropdownStatus();
+    }
+  }
+
+  // Update dropdown option indicators (called only on status change, not animation)
+  updateDropdownStatus() {
+    const options = this.elements.sessionSelect.querySelectorAll('option');
+    options.forEach(option => {
+      const sessionId = option.value;
+      if (!sessionId) return;
+
+      if (sessionId.startsWith('external:')) {
+        const pid = parseInt(sessionId.replace('external:', ''), 10);
+        const external = this.externalSessions.find(s => s.pid === pid);
+        if (external) {
+          const indicator = external.activityStatus === 'busy' ? '◉' : '○';
+          const folderName = external.cwd.split('/').filter(Boolean).pop() || external.cwd;
+          option.textContent = `${indicator} ${folderName}`;
+          option.dataset.status = external.activityStatus || 'unknown';
+        }
+      } else {
+        const session = this.sessions.find(s => s.id === sessionId);
+        if (session) {
+          const indicator = session.activityStatus === 'busy' ? '◉' : '○';
+          option.textContent = `${indicator} ${this.getDisplayName(session)}`;
+          option.dataset.status = session.activityStatus || 'unknown';
+        }
+      }
+    });
   }
 
   // Update all activity status indicators in tabs and dropdown
@@ -1667,39 +1699,8 @@ class ClaudeRemote {
       }
     });
 
-    // Update dropdown options (both regular and external sessions)
-    const options = this.elements.sessionSelect.querySelectorAll('option');
-    options.forEach(option => {
-      const sessionId = option.value;
-      if (!sessionId) return;
-
-      // Handle external sessions
-      if (sessionId.startsWith('external:')) {
-        const cwd = option.dataset.externalCwd;
-        const external = this.externalSessions.find(s => s.cwd === cwd);
-        if (external) {
-          const indicator = external.activityStatus === 'busy'
-            ? SPINNER_FRAMES[this.spinnerFrame]
-            : '●';
-          const folderName = cwd.split('/').filter(Boolean).pop() || cwd;
-          option.textContent = `${indicator} ${folderName}`;
-          option.dataset.status = external.activityStatus || 'unknown';
-        }
-        return;
-      }
-
-      // Handle regular sessions
-      const session = this.sessions.find(s => s.id === sessionId);
-      if (session) {
-        const indicator = session.activityStatus === 'busy'
-          ? SPINNER_FRAMES[this.spinnerFrame]
-          : '●';
-        const statusClass = session.activityStatus || 'unknown';
-        const baseName = this.getDisplayName(session);
-        option.textContent = `${indicator} ${baseName}`;
-        option.dataset.status = statusClass;
-      }
-    });
+    // Note: We don't animate dropdown <option> elements - they use static indicators
+    // set during updateSessionList(). Animating them causes flashing on mobile.
 
     // Update external session items
     const externalItems = document.querySelectorAll('.external-session-item');

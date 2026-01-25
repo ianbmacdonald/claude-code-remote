@@ -1053,7 +1053,7 @@ class ClaudeRemote {
     for (const session of sessions) {
       const option = document.createElement('option');
       option.value = session.id;
-      const indicator = session.activityStatus === 'busy' ? '◉' : '○';
+      const indicator = session.activityStatus === 'busy' ? '⏳' : '○';
       option.textContent = `${indicator} ${getDisplayName(session)}`;
       option.dataset.status = session.activityStatus || 'unknown';
       select.appendChild(option);
@@ -1069,7 +1069,7 @@ class ClaudeRemote {
       for (const external of this.externalSessions) {
         const option = document.createElement('option');
         option.value = `external:${external.pid}`;
-        const indicator = external.activityStatus === 'busy' ? '◉' : '○';
+        const indicator = external.activityStatus === 'busy' ? '⏳' : '○';
         option.textContent = `${indicator} ${getFolderName(external.cwd)}`;
         option.dataset.status = external.activityStatus || 'unknown';
         select.appendChild(option);
@@ -1666,7 +1666,7 @@ class ClaudeRemote {
         const pid = parseInt(sessionId.replace('external:', ''), 10);
         const external = this.externalSessions.find(s => s.pid === pid);
         if (external) {
-          const indicator = external.activityStatus === 'busy' ? '◉' : '○';
+          const indicator = external.activityStatus === 'busy' ? '⏳' : '○';
           const folderName = external.cwd.split('/').filter(Boolean).pop() || external.cwd;
           option.textContent = `${indicator} ${folderName}`;
           option.dataset.status = external.activityStatus || 'unknown';
@@ -1674,7 +1674,7 @@ class ClaudeRemote {
       } else {
         const session = this.sessions.find(s => s.id === sessionId);
         if (session) {
-          const indicator = session.activityStatus === 'busy' ? '◉' : '○';
+          const indicator = session.activityStatus === 'busy' ? '⏳' : '○';
           option.textContent = `${indicator} ${this.getDisplayName(session)}`;
           option.dataset.status = session.activityStatus || 'unknown';
         }

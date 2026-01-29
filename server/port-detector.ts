@@ -1,4 +1,5 @@
 import { exec } from 'child_process';
+import net from 'net';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
@@ -90,7 +91,6 @@ export class PortDetector {
 
   private async isPortOpen(port: number): Promise<boolean> {
     return new Promise((resolve) => {
-      const net = require('net');
       const socket = new net.Socket();
 
       socket.setTimeout(200);

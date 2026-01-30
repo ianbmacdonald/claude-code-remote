@@ -6,6 +6,13 @@ All notable changes to Claude Code Remote are documented here.
 
 ---
 
+## [0.1.3] - 2025-01-30
+
+### Fixed
+- Fix spawn-helper permissions when installed via npx (flat node_modules structure)
+
+---
+
 ## [0.1.2] - 2025-01-30
 
 ### Added
